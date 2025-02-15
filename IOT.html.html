@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IOT Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(45deg, #042550, #09dfd8);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin: 20px 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(27, 142, 164, 0.3);
+      text-align: center;
+    }
+
+    .container {
+      text-align: left;
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      border-radius: 15px;
+      background-color: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .status {
+      font-size: 1.5rem;
+      margin: 15px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status span {
+      font-weight: bold;
+      font-size: 1.6rem;
+    }
+
+    .status:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .led {
+      padding: 15px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 10px;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .red {
+      background-color: #e74c3c;
+      transition: transform 0.3s ease;
+      animation: blinkAnimation 1s infinite; 
+    }
+
+    .green {
+      background-color: #2ecc71;
+      transform: scale(1.1);
+    }
+
+    .red:hover, .green:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .led-text {
+      color: #fff;
+      font-size: 1.4rem;
+    }
+    @keyframes blinkAnimation {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.4);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .control-button {
+      background-color: #e74c3c;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 200px;
+      transition: background-color 0.3s;
+    }
+
+    .control-button:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IOT Projekat</h1>
+
+    <div class="status">
+      <span>Temperatura:</span>
+      <span id="temperature">Loading...</span> °C
+    </div>
+
+    <div class="status">
+      <span>Udaljenost:</span>
+      <span id="distance">Loading...</span> cm
+    </div>
+
+    <div class="status">
+      <span>Trenutno stanje:</span>
+      <span id="lamp">Loading...</span>
+    </div>
+
+    <div id="lampStatus" class="led">
+      <span class="led-text" id="lamp"></span>
+    </div>
+  </div>
+
+  <button class="control-button" id="turnOnBuzzer">Turn On Buzzer</button>
+  <button class="control-button" id="turnOffBuzzer">Turn Off Buzzer</button>
+
+  <script>
+    // Firebase konfiguracija
+    const firebaseConfig = {
+      apiKey: "AIzaSyDmG8EaBb9mdeyvAhkuP3hUL4LFtaGNGa4",
+      authDomain: "kurs-5b897.firebaseapp.com",
+      databaseURL: "https://kurs-5b897-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kurs-5b897",
+      storageBucket: "kurs-5b897.firebasestorage.app",
+      messagingSenderId: "170580321813",
+      appId: "1:170580321813:web:3c72764555cae30346101c"
+    };
+
+    // Inicijalizacija Firebase-a
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    // Funkcija za ažuriranje podataka na stranici
+    function updateDashboard() {
+      database.ref("/temperature").on("value", (snapshot) => {
+        document.getElementById("temperature").innerText = snapshot.val();
+      });
+
+      database.ref("/distance").on("value", (snapshot) => {
+        const distance = snapshot.val();
+        document.getElementById("distance").innerText = distance;
+
+        // Prikaz statusa lampice
+        const lampStatus = parseFloat(document.getElementById("temperature").innerText) > 25 ? "Opasno" : "Sigurno";
+        document.getElementById("lamp").innerText = lampStatus;
+        document.getElementById("lamp").className = "led " + (lampStatus === "Opasno" ? "red" : "green");
+      });
+    }
+
+    updateDashboard();
+
+    document.getElementById("turnOnBuzzer").addEventListener("click", function() {
+      firebase.database().ref("/buzzer").set(true);
+    });
+
+    // Funkcija za gašenje buzzera
+    document.getElementById("turnOffBuzzer").addEventListener("click", function() {
+      firebase.database().ref("/buzzer").set(false);
+    });
+
+    
+  </script>
+</body>
+</html>
